@@ -5,7 +5,7 @@ from selenium.webdriver.common.keys import Keys
 import time
 
 def initialize_driver():
-    PATH = "C:\Geckodriver\geckodriver.exe"
+    PATH = "C:\\Geckodriver\\geckodriver.exe"
     service = Service(PATH)
     driver = webdriver.Firefox(service=service)
     return driver
@@ -56,6 +56,39 @@ def main():
                     if 0 <= link_choice < len(links):
                         driver.get(links[link_choice][1])
                         time.sleep(2)  # Ждем, пока страница загрузится
+
+                        while True:
+                            print("\nВыберите действие для этой страницы:")
+                            print("a) Листать параграфы статьи")
+                            print("b) Перейти на одну из внутренних страниц")
+                            print("c) Вернуться назад")
+
+                            sub_choice = input("Введите букву действия: ").lower()
+
+                            if sub_choice == "a":
+                                paragraphs = get_paragraphs(driver)
+                                for i, paragraph in enumerate(paragraphs):
+                                    print(f"Параграф {i + 1}: {paragraph}\n")
+                                continue
+
+                            elif sub_choice == "b":
+                                internal_links = get_internal_links(driver)
+                                for i, (text, href) in enumerate(internal_links):
+                                    print(f"{i+1}. {text} - {href}")
+
+                                internal_link_choice = int(input("Введите номер ссылки для перехода на внутреннюю страницу: ")) - 1
+                                if 0 <= internal_link_choice < len(internal_links):
+                                    driver.get(internal_links[internal_link_choice][1])
+                                    time.sleep(2)  # Ждем, пока страница загрузится
+                                else:
+                                    print("Недопустимый выбор. Попробуйте снова.")
+                                continue
+
+                            elif sub_choice == "c":
+                                break
+
+                            else:
+                                print("Недопустимый выбор. Попробуйте снова.")
                     else:
                         print("Недопустимый выбор. Попробуйте снова.")
                     continue
