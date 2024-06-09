@@ -1,29 +1,77 @@
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service
-from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 import time
-import random
 
-geckodriver_path = r"C:\Geckodriver\geckodriver.exe"
-service = Service(executable_path=geckodriver_path)
-browser = webdriver.Firefox(service=service)
-browser.get('https://ru.wikipedia.org/wiki/%D0%A1%D0%BE%D0%BB%D0%BD%D0%B5%D1%87%D0%BD%D0%B0%D1%8F_%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D0%B0')
-#paragraphs = browser.find_elements(By.TAG_NAME,"p")
-#for paragraph in paragraphs:
-#    print (paragraph.text)
-#    input()
+def initialize_driver():
+    PATH = "C:\Geckodriver\geckodriver.exe"
+    service = Service(PATH)
+    driver = webdriver.Firefox(service=service)
+    return driver
 
-hatnotes = []
-for element in browser.find_elements(By.TAG_NAME, "div"):
-    cl=element.get_attribute("class")
-    if cl == "hatnote navigation-not-searchable":
-        hatnotes.append(element)
+def search_wikipedia(driver, query):
+    driver.get("https://www.wikipedia.org/")
+    search_box = driver.find_element(By.NAME, "search")
+    search_box.send_keys(query)
+    search_box.send_keys(Keys.RETURN)
+    time.sleep(2)  # Ждем, пока страница загрузится
 
-print(hatnotes)
+def get_paragraphs(driver):
+    paragraphs = driver.find_elements(By.CSS_SELECTOR, "p")
+    return [paragraph.text for paragraph in paragraphs]
 
-hatnote = random.choice(hatnotes)
-link=hatnote.find_element(By.TAG_NAME, "a").get_attribute("href")
-browser.get(link)
+def get_internal_links(driver):
+    links = driver.find_elements(By.CSS_SELECTOR, "a[href^='/wiki/']")
+    return [(link.text, link.get_attribute('href')) for link in links if link.text]
 
+def main():
+    driver = initialize_driver()
 
+    try:
+        while True:
+            query = input("Введите запрос для поиска в Википедии: ")
+            search_wikipedia(driver, query)
+
+            while True:
+                print("\nВыберите действие:")
+                print("1. Листать параграфы текущей статьи")
+                print("2. Перейти на одну из связанных страниц")
+                print("3. Выйти из программы")
+
+                choice = input("Введите номер действия: ")
+
+                if choice == "1":
+                    paragraphs = get_paragraphs(driver)
+                    for i, paragraph in enumerate(paragraphs):
+                        print(f"Параграф {i + 1}: {paragraph}\n")
+                    continue
+
+                elif choice == "2":
+                    links = get_internal_links(driver)
+                    for i, (text, href) in enumerate(links):
+                        print(f"{i+1}. {text} - {href}")
+
+                    link_choice = int(input("Введите номер ссылки для перехода: ")) - 1
+                    if 0 <= link_choice < len(links):
+                        driver.get(links[link_choice][1])
+                        time.sleep(2)  # Ждем, пока страница загрузится
+                    else:
+                        print("Недопустимый выбор. Попробуйте снова.")
+                    continue
+
+                elif choice == "3":
+                    print("Выход из программы.")
+                    break
+
+                else:
+                    print("Недопустимый выбор. Попробуйте снова.")
+
+            if choice == "3":
+                break
+
+    finally:
+        driver.quit()
+
+if __name__ == "__main__":
+    main()
